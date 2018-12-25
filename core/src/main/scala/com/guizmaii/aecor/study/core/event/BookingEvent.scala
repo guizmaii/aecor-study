@@ -9,7 +9,7 @@ final case class BookingPlaced(clientId: ClientId, concertId: ConcertId, seats: 
 final case class BookingConfirmed(tickets: NEL[Ticket])                                    extends BookingEvent
 final case class BookingDenied(reason: String)                                             extends BookingEvent
 final case class BookingCancelled(reason: String)                                          extends BookingEvent
-case object BookingExpired                                                                 extends BookingEvent
+final case object BookingExpired                                                           extends BookingEvent
 final case class BookingPaid(paymentId: PaymentId)                                         extends BookingEvent
 final case object BookingSettled                                                           extends BookingEvent
 

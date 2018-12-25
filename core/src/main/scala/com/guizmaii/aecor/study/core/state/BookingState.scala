@@ -43,7 +43,7 @@ object BookingState {
   import Folded.syntax._
 
   // this is an initialization fold
-  def init(e: BookingEvent): Folded[BookingState] =
+  final def init(e: BookingEvent): Folded[BookingState] =
     e match {
       case e: BookingPlaced =>
         BookingState(e.clientId, e.concertId, e.seats, None, BookingStatus.AwaitingConfirmation, None).next
@@ -56,7 +56,7 @@ object BookingState {
 final case class Money(amount: BigDecimal) extends AnyVal
 
 object Money {
-  implicit val monoid: Monoid[Money] =
+  implicit final val monoid: Monoid[Money] =
     new Monoid[Money] {
       def empty: Money                       = Money(0)
       def combine(x: Money, y: Money): Money = Money(x.amount + y.amount)
@@ -74,7 +74,7 @@ final case class Seat(row: Row, number: SeatNumber)
 object Seat {
   import cats.implicits._
 
-  implicit val order: Order[Seat] = Order.by((s: Seat) => (s.row.num, s.number.num))
+  implicit final val order: Order[Seat] = Order.by(s => (s.row.num, s.number.num))
 }
 
 final case class Ticket(seat: Seat, price: Money)

@@ -69,7 +69,7 @@ final class EventsourcedBooking[F[_]](
 }
 
 object EventsourcedBooking {
-  def behavior[F[_]: Monad]
+  final def behavior[F[_]: Monad]
     : EventsourcedBehavior[EitherK[Booking, BookingCommandRejection, ?[_]], F, Option[BookingState], BookingEvent] =
     EventsourcedBehavior
       .optionalRejectable(new EventsourcedBooking(), BookingState.init, _.handleEvent(_))
