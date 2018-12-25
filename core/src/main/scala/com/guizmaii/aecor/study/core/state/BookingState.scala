@@ -1,8 +1,10 @@
 package com.guizmaii.aecor.study.core.state
 
+import aecor.data.Folded
 import cats.Order
 import cats.data.{NonEmptyList => NEL}
 import cats.kernel.Monoid
+import com.guizmaii.aecor.study.core.event._
 import enumeratum._
 
 import scala.collection.immutable
@@ -15,7 +17,39 @@ final case class BookingState(
     tickets: Option[NEL[Ticket]],
     status: BookingStatus,
     paymentId: Option[PaymentId]
-)
+) {
+
+  import Folded.syntax._
+
+  // This function defines transformations for already existing bookings,
+  // that's why we can define it as a method on BookingState
+  def handleEvent(e: BookingEvent): Folded[BookingState] =
+    e match {
+      case _: BookingPlaced => impossible
+      case e: BookingConfirmed =>
+        copy(
+          tickets = Some(e.tickets),
+          status = BookingStatus.Confirmed
+        ).next
+      case _: BookingCancelled => copy(status = BookingStatus.Canceled).next
+      case _: BookingDenied    => copy(status = BookingStatus.Denied).next
+      case BookingExpired      => copy(status = BookingStatus.Canceled).next
+      case e: BookingPaid      => copy(paymentId = Some(e.paymentId)).next
+      case BookingSettled      => copy(status = BookingStatus.Settled).next
+    }
+}
+
+object BookingState {
+  import Folded.syntax._
+
+  // this is an initialization fold
+  def init(e: BookingEvent): Folded[BookingState] =
+    e match {
+      case e: BookingPlaced =>
+        BookingState(e.clientId, e.concertId, e.seats, None, BookingStatus.AwaitingConfirmation, None).next
+      case _ => impossible
+    }
+}
 
 // data definitions that are used in BookingState
 

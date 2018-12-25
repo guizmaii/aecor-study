@@ -6,7 +6,13 @@ ThisBuild / scalafmtSbtCheck := true
 
 lazy val projectName = "aecor-study"
 
-val aecor = ((version: String) =>
+// ## Libs
+
+val cats             = "org.typelevel" %% "cats-core" % "1.5.0"
+val kindProjector    = compilerPlugin("org.spire-math" %% "kind-projector" % "0.9.9")
+val betterMonadicFor = addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.2.4")
+
+lazy val aecor = ((version: String) =>
   Seq(
     "io.aecor" %% "core"                    % version,
     "io.aecor" %% "schedule"                % version,
@@ -16,13 +22,13 @@ val aecor = ((version: String) =>
     "io.aecor" %% "test-kit"                % version % Test
   ))("0.18.0")
 
-val cats = "org.typelevel" %% "cats-core" % "1.5.0"
-
-val circe = ((version: String) =>
+lazy val circe =
   Seq(
-    "com.beachape" %% "enumeratum"       % version,
-    "com.beachape" %% "enumeratum-circe" % version,
-  ))("1.5.13")
+    "com.beachape" %% "enumeratum"       % "1.5.13",
+    "com.beachape" %% "enumeratum-circe" % "1.5.18"
+  )
+
+// ## Projects
 
 lazy val root =
   Project(id = projectName, base = file("."))
@@ -35,11 +41,15 @@ lazy val core =
   project
     .settings(moduleName := projectName)
     .settings(
-      libraryDependencies ++= aecor ++ circe ++
+      betterMonadicFor,
+      libraryDependencies ++=
         Seq(
+          kindProjector,
           cats
-        )
+        ) ++ aecor ++ circe
     )
+
+// ## Commons
 
 /**
   * Copied from Cats

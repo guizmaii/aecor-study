@@ -1,6 +1,8 @@
 package com.guizmaii.aecor.study.core.action
 
 import aecor.MonadActionReject
+import aecor.data.{EitherK, EventsourcedBehavior}
+import cats.Monad
 import cats.data.NonEmptyList
 import com.guizmaii.aecor.study.core.entity.Booking
 import com.guizmaii.aecor.study.core.event._
@@ -64,4 +66,11 @@ final class EventsourcedBooking[F[_]](
 
   override def tickets: F[Option[NonEmptyList[Ticket]]] = F.read.map(_.flatMap(_.tickets))
 
+}
+
+object EventsourcedBooking {
+  def behavior[F[_]: Monad]
+    : EventsourcedBehavior[EitherK[Booking, BookingCommandRejection, ?[_]], F, Option[BookingState], BookingEvent] =
+    EventsourcedBehavior
+      .optionalRejectable(new EventsourcedBooking(), BookingState.init, _.handleEvent(_))
 }
