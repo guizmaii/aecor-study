@@ -16,6 +16,14 @@ val aecor = ((version: String) =>
     "io.aecor" %% "test-kit"                % version % Test
   ))("0.18.0")
 
+val cats = "org.typelevel" %% "cats-core" % "1.5.0"
+
+val circe = ((version: String) =>
+  Seq(
+    "com.beachape" %% "enumeratum"       % version,
+    "com.beachape" %% "enumeratum-circe" % version,
+  ))("1.5.13")
+
 lazy val root =
   Project(id = projectName, base = file("."))
     .settings(moduleName := "root")
@@ -26,8 +34,12 @@ lazy val root =
 lazy val core =
   project
     .settings(moduleName := projectName)
-    .settings(addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M11" cross CrossVersion.full))
-    .settings(libraryDependencies ++= aecor)
+    .settings(
+      libraryDependencies ++= aecor ++ circe ++
+        Seq(
+          cats
+        )
+    )
 
 /**
   * Copied from Cats
