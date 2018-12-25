@@ -2,6 +2,7 @@ package com.guizmaii.aecor.study.core.state
 
 import cats.Order
 import cats.data.{NonEmptyList => NEL}
+import cats.kernel.Monoid
 import enumeratum._
 
 import scala.collection.immutable
@@ -19,6 +20,14 @@ final case class BookingState(
 // data definitions that are used in BookingState
 
 final case class Money(amount: BigDecimal) extends AnyVal
+
+object Money {
+  implicit val monoid: Monoid[Money] =
+    new Monoid[Money] {
+      def empty: Money                       = Money(0)
+      def combine(x: Money, y: Money): Money = Money(x.amount + y.amount)
+    }
+}
 
 final case class ClientId(value: String)  extends AnyVal
 final case class ConcertId(value: String) extends AnyVal
