@@ -1,5 +1,5 @@
 ThisBuild / organization := "com.guizmaii"
-ThisBuild / scalaVersion := "2.12.8"
+ThisBuild / scalaVersion := "2.12.7"
 ThisBuild / scalafmtOnCompile := true
 ThisBuild / scalafmtCheck := true
 ThisBuild / scalafmtSbtCheck := true
@@ -8,9 +8,11 @@ lazy val projectName = "aecor-study"
 
 // ## Libs
 
-val cats             = "org.typelevel" %% "cats-core" % "1.5.0"
-val kindProjector    = compilerPlugin("org.spire-math" %% "kind-projector" % "0.9.9")
-val betterMonadicFor = addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.2.4")
+val cats              = "org.typelevel" %% "cats-core" % "1.5.0"
+val catsTagless       = "org.typelevel" %% "cats-tagless-macros" % "0.2.0"
+val kindProjector     = compilerPlugin("org.spire-math" %% "kind-projector" % "0.9.9")
+val betterMonadicFor  = addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.2.4")
+val scalametaParadise = addCompilerPlugin(("org.scalameta" % "paradise" % "3.0.0-M11").cross(CrossVersion.full))
 
 lazy val aecor = ((version: String) =>
   Seq(
@@ -42,6 +44,7 @@ lazy val core =
     .settings(moduleName := projectName)
     .settings(
       betterMonadicFor,
+      scalametaParadise,
       libraryDependencies ++=
         Seq(
           kindProjector,

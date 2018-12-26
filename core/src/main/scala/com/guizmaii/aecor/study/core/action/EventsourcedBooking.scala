@@ -1,9 +1,14 @@
 package com.guizmaii.aecor.study.core.action
 
+import java.time.Instant
+import java.util.concurrent.TimeUnit
+
 import aecor.MonadActionReject
-import aecor.data.{EitherK, EventsourcedBehavior}
+import aecor.data.{EitherK, Enriched, EventsourcedBehavior}
 import cats.Monad
 import cats.data.NonEmptyList
+import cats.effect.Clock
+import com.guizmaii.aecor.study.core.action.EventsourcedBooking.behavior
 import com.guizmaii.aecor.study.core.entity.Booking
 import com.guizmaii.aecor.study.core.event._
 import com.guizmaii.aecor.study.core.state.BookingStatus.{AwaitingConfirmation, Canceled, Confirmed, Denied, Settled}
@@ -73,4 +78,25 @@ object EventsourcedBooking {
     : EventsourcedBehavior[EitherK[Booking, BookingCommandRejection, ?[_]], F, Option[BookingState], BookingEvent] =
     EventsourcedBehavior
       .optionalRejectable(new EventsourcedBooking(), BookingState.init, _.handleEvent(_))
+  // returns that same old instance of EventsourcedBehavior
+}
+
+final case class EventMetadata(timestamp: Instant) extends AnyVal
+
+final abstract class Enrich[F[_]: Monad: Clock] {
+
+  import cats.syntax.functor._
+
+  private val clock = implicitly[Clock[F]]
+
+  val generateTimestamp: F[EventMetadata] =
+    clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli).map(EventMetadata)
+
+  val enrichedBehavior: EventsourcedBehavior[
+    EitherK[Booking, BookingCommandRejection, ?[_]],
+    F,
+    Option[BookingState],
+    Enriched[EventMetadata, BookingEvent]
+  ] = /*_*/ behavior.enrich[EventMetadata](generateTimestamp) /*_*/
+
 }
