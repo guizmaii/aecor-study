@@ -1,4 +1,4 @@
-package com.guizmaii.aecor.study.core.state
+package com.guizmaii.aecor.study.core.booking.state
 
 import java.time.Instant
 
@@ -6,7 +6,7 @@ import aecor.data.Folded
 import cats.Order
 import cats.data.{NonEmptyList => NEL}
 import cats.kernel.Monoid
-import com.guizmaii.aecor.study.core.event._
+import com.guizmaii.aecor.study.core.booking.event._
 import enumeratum._
 
 import scala.collection.immutable

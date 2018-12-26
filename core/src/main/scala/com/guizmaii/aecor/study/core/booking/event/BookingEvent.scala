@@ -1,9 +1,9 @@
-package com.guizmaii.aecor.study.core.event
+package com.guizmaii.aecor.study.core.booking.event
 
 import java.time.Instant
 
 import cats.data.{NonEmptyList => NEL}
-import com.guizmaii.aecor.study.core.state._
+import com.guizmaii.aecor.study.core.booking.state._
 
 sealed trait BookingEvent extends Product with Serializable
 

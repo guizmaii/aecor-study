@@ -1,10 +1,10 @@
-package com.guizmaii.aecor.study.core.entity
+package com.guizmaii.aecor.study.core.booking.entity
 
 import java.time.Instant
 
 import cats.data.{NonEmptyList => NEL}
 import cats.tagless.autoFunctorK
-import com.guizmaii.aecor.study.core.state._
+import com.guizmaii.aecor.study.core.booking.state._
 
 @autoFunctorK(autoDerivation = false)
 trait Booking[F[_]] {

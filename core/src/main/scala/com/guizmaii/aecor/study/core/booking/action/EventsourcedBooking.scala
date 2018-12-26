@@ -1,4 +1,4 @@
-package com.guizmaii.aecor.study.core.action
+package com.guizmaii.aecor.study.core.booking.action
 
 import java.time.Instant
 import java.util.concurrent.TimeUnit
@@ -8,13 +8,19 @@ import aecor.data.{EitherK, Enriched, EventsourcedBehavior}
 import cats.Monad
 import cats.data.NonEmptyList
 import cats.effect.{Clock, Concurrent, Timer}
-import com.guizmaii.aecor.study.core.action.EventsourcedBooking.behavior
+import com.guizmaii.aecor.study.core.booking.action.EventsourcedBooking.behavior
 import com.guizmaii.aecor.study.core.common
 import com.guizmaii.aecor.study.core.common.effect.TimedOutBehaviour
-import com.guizmaii.aecor.study.core.entity.Booking
-import com.guizmaii.aecor.study.core.event._
-import com.guizmaii.aecor.study.core.state.BookingStatus.{AwaitingConfirmation, Canceled, Confirmed, Denied, Settled}
-import com.guizmaii.aecor.study.core.state._
+import com.guizmaii.aecor.study.core.booking.entity.Booking
+import com.guizmaii.aecor.study.core.booking.event._
+import com.guizmaii.aecor.study.core.booking.state.BookingStatus.{
+  AwaitingConfirmation,
+  Canceled,
+  Confirmed,
+  Denied,
+  Settled
+}
+import com.guizmaii.aecor.study.core.booking.state._
 
 final class EventsourcedBooking[F[_], G[_]](clock: Clock[G])(
     implicit F: MonadActionLiftReject[F, G, Option[BookingState], BookingEvent, BookingCommandRejection]
