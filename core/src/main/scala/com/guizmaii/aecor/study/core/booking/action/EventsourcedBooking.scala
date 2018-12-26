@@ -107,7 +107,7 @@ object EventsourcedBooking {
 
 final case class EventMetadata(timestamp: Instant) extends AnyVal
 
-final abstract class Enrich[F[_]: Concurrent: Timer](clock: Clock[F]) {
+abstract class Enrich[F[_]: Concurrent: Timer](clock: Clock[F]) {
 
   import cats.syntax.functor._
 
