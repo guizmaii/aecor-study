@@ -22,7 +22,7 @@ object BookingEventSerializer extends PostgresEventJournal.Serializer[Enriched[E
     final case object AE extends Hint
     final case object AF extends Hint
     final case object AG extends Hint
-    def values: immutable.IndexedSeq[Hint] = findValues
+    final val values: immutable.IndexedSeq[Hint] = findValues
   }
 
   import Hint._
