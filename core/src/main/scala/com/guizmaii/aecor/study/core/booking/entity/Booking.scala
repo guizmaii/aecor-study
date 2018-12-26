@@ -2,11 +2,13 @@ package com.guizmaii.aecor.study.core.booking.entity
 
 import java.time.Instant
 
+import aecor.macros.boopickleWireProtocol
 import cats.data.{NonEmptyList => NEL}
 import cats.tagless.autoFunctorK
 import com.guizmaii.aecor.study.core.booking.state._
 
 @autoFunctorK(autoDerivation = false)
+@boopickleWireProtocol
 trait Booking[F[_]] {
   def place(client: ClientId, concert: ConcertId, seats: NEL[Seat]): F[Unit]
   def confirm(tickets: NEL[Ticket], expiresAt: Option[Instant]): F[Unit]
