@@ -7,8 +7,10 @@ import aecor.MonadActionLiftReject
 import aecor.data.{EitherK, Enriched, EventsourcedBehavior}
 import cats.Monad
 import cats.data.NonEmptyList
-import cats.effect.Clock
+import cats.effect.{Clock, Concurrent, Timer}
 import com.guizmaii.aecor.study.core.action.EventsourcedBooking.behavior
+import com.guizmaii.aecor.study.core.common
+import com.guizmaii.aecor.study.core.common.effect.TimedOutBehaviour
 import com.guizmaii.aecor.study.core.entity.Booking
 import com.guizmaii.aecor.study.core.event._
 import com.guizmaii.aecor.study.core.state.BookingStatus.{AwaitingConfirmation, Canceled, Confirmed, Denied, Settled}
@@ -70,7 +72,7 @@ final class EventsourcedBooking[F[_], G[_]](clock: Clock[G])(
 
   override def expire: F[Unit] = {
     import cats.implicits._
-    import com.guizmaii.aecor.study.core.utils.InstantOps._
+    import common.syntax.instant._
 
     for {
       now <- F.liftF(clock.realTime(TimeUnit.MILLISECONDS)).map(Instant.ofEpochMilli)
@@ -99,9 +101,11 @@ object EventsourcedBooking {
 
 final case class EventMetadata(timestamp: Instant) extends AnyVal
 
-final abstract class Enrich[F[_]: Monad](clock: Clock[F]) {
+final abstract class Enrich[F[_]: Concurrent: Timer](clock: Clock[F]) {
 
   import cats.syntax.functor._
+
+  import scala.concurrent.duration._
 
   val generateTimestamp: F[EventMetadata] =
     clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli).map(EventMetadata)
@@ -112,5 +116,12 @@ final abstract class Enrich[F[_]: Monad](clock: Clock[F]) {
     Option[BookingState],
     Enriched[EventMetadata, BookingEvent]
   ] = /*_*/ behavior(clock).enrich[EventMetadata](generateTimestamp) /*_*/
+
+  val timedOutBehavior: EventsourcedBehavior[
+    EitherK[Booking, BookingCommandRejection, ?[_]],
+    F,
+    Option[BookingState],
+    Enriched[EventMetadata, BookingEvent]
+  ] = /*_*/ TimedOutBehaviour(enrichedBehavior)(2.seconds) /*_*/
 
 }
