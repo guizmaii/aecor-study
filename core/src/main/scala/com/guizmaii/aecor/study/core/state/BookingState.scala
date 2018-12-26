@@ -1,5 +1,7 @@
 package com.guizmaii.aecor.study.core.state
 
+import java.time.Instant
+
 import aecor.data.Folded
 import cats.Order
 import cats.data.{NonEmptyList => NEL}
@@ -16,7 +18,8 @@ final case class BookingState(
     seats: NEL[Seat],
     tickets: Option[NEL[Ticket]],
     status: BookingStatus,
-    paymentId: Option[PaymentId]
+    paymentId: Option[PaymentId],
+    expiresAt: Option[Instant]
 ) {
 
   import Folded.syntax._
@@ -26,16 +29,17 @@ final case class BookingState(
   def handleEvent(e: BookingEvent): Folded[BookingState] =
     e match {
       case _: BookingPlaced => impossible
-      case e: BookingConfirmed =>
+      case BookingConfirmed(tickets, expiresAt) =>
         copy(
-          tickets = Some(e.tickets),
-          status = BookingStatus.Confirmed
+          tickets = Some(tickets),
+          status = BookingStatus.Confirmed,
+          expiresAt = expiresAt
         ).next
-      case _: BookingCancelled => copy(status = BookingStatus.Canceled).next
-      case _: BookingDenied    => copy(status = BookingStatus.Denied).next
-      case BookingExpired      => copy(status = BookingStatus.Canceled).next
-      case e: BookingPaid      => copy(paymentId = Some(e.paymentId)).next
-      case BookingSettled      => copy(status = BookingStatus.Settled).next
+      case _: BookingCancelled    => copy(status = BookingStatus.Canceled).next
+      case _: BookingDenied       => copy(status = BookingStatus.Denied).next
+      case BookingExpired         => copy(status = BookingStatus.Canceled).next
+      case BookingPaid(paymentId) => copy(paymentId = Some(paymentId)).next
+      case BookingSettled         => copy(status = BookingStatus.Settled).next
     }
 }
 
@@ -45,8 +49,16 @@ object BookingState {
   // this is an initialization fold
   final def init(e: BookingEvent): Folded[BookingState] =
     e match {
-      case e: BookingPlaced =>
-        BookingState(e.clientId, e.concertId, e.seats, None, BookingStatus.AwaitingConfirmation, None).next
+      case BookingPlaced(clientId, concertId, seats) =>
+        BookingState(
+          clientId = clientId,
+          concertId = concertId,
+          seats = seats,
+          tickets = None,
+          status = BookingStatus.AwaitingConfirmation,
+          paymentId = None,
+          expiresAt = None
+        ).next
       case _ => impossible
     }
 }

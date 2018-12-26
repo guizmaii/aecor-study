@@ -3,7 +3,7 @@ package com.guizmaii.aecor.study.core.action
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
-import aecor.MonadActionReject
+import aecor.MonadActionLiftReject
 import aecor.data.{EitherK, Enriched, EventsourcedBehavior}
 import cats.Monad
 import cats.data.NonEmptyList
@@ -14,8 +14,8 @@ import com.guizmaii.aecor.study.core.event._
 import com.guizmaii.aecor.study.core.state.BookingStatus.{AwaitingConfirmation, Canceled, Confirmed, Denied, Settled}
 import com.guizmaii.aecor.study.core.state._
 
-final class EventsourcedBooking[F[_]](
-    implicit F: MonadActionReject[F, Option[BookingState], BookingEvent, BookingCommandRejection]
+final class EventsourcedBooking[F[_], G[_]](clock: Clock[G])(
+    implicit F: MonadActionLiftReject[F, G, Option[BookingState], BookingEvent, BookingCommandRejection]
 ) extends Booking[F] {
 
   import cats.syntax.all._
@@ -31,10 +31,10 @@ final class EventsourcedBooking[F[_]](
         else F.append(BookingPlaced(client, concert, seats))
     }
 
-  override def confirm(tickets: NonEmptyList[Ticket]): F[Unit] =
+  override def confirm(tickets: NonEmptyList[Ticket], expiresAt: Option[Instant]): F[Unit] =
     status.flatMap {
       case AwaitingConfirmation =>
-        F.append(BookingConfirmed(tickets)) >>
+        F.append(BookingConfirmed(tickets, expiresAt)) >>
           F.whenA(tickets.foldMap(_.price).amount <= 0)(F.append(BookingSettled))
 
       case Confirmed | Settled => ignore
@@ -64,30 +64,44 @@ final class EventsourcedBooking[F[_]](
       case Confirmed                   => F.append(BookingPaid(paymentId)) >> F.append(BookingSettled)
     }
 
-  override def status: F[BookingStatus] = F.read.flatMap {
-    case Some(s) => F.pure(s.status)
-    case _       => F.reject(BookingNotFound)
-  }
+  override def status: F[BookingStatus] = state.map(_.status)
 
   override def tickets: F[Option[NonEmptyList[Ticket]]] = F.read.map(_.flatMap(_.tickets))
 
+  override def expire: F[Unit] = {
+    import cats.implicits._
+    import com.guizmaii.aecor.study.core.utils.InstantOps._
+
+    for {
+      now <- F.liftF(clock.realTime(TimeUnit.MILLISECONDS)).map(Instant.ofEpochMilli)
+      s   <- state
+      _ <- s.status match {
+        case Confirmed if now.isAfterM(s.expiresAt) => F.append(BookingExpired)
+        case Confirmed                              => F.reject(TooEarlyToExpire)
+        case _                                      => ignore
+      }
+    } yield ()
+  }
+
+  private def state: F[BookingState] = F.read.flatMap {
+    case Some(s) => F.pure(s)
+    case _       => F.reject(BookingNotFound)
+  }
 }
 
 object EventsourcedBooking {
-  final def behavior[F[_]: Monad]
-    : EventsourcedBehavior[EitherK[Booking, BookingCommandRejection, ?[_]], F, Option[BookingState], BookingEvent] =
+  final def behavior[F[_]: Monad](
+      clock: Clock[F]
+  ): EventsourcedBehavior[EitherK[Booking, BookingCommandRejection, ?[_]], F, Option[BookingState], BookingEvent] =
     EventsourcedBehavior
-      .optionalRejectable(new EventsourcedBooking(), BookingState.init, _.handleEvent(_))
-  // returns that same old instance of EventsourcedBehavior
+      .optionalRejectable(new EventsourcedBooking(clock), BookingState.init, _.handleEvent(_))
 }
 
 final case class EventMetadata(timestamp: Instant) extends AnyVal
 
-final abstract class Enrich[F[_]: Monad: Clock] {
+final abstract class Enrich[F[_]: Monad](clock: Clock[F]) {
 
   import cats.syntax.functor._
-
-  private val clock = implicitly[Clock[F]]
 
   val generateTimestamp: F[EventMetadata] =
     clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli).map(EventMetadata)
@@ -97,6 +111,6 @@ final abstract class Enrich[F[_]: Monad: Clock] {
     F,
     Option[BookingState],
     Enriched[EventMetadata, BookingEvent]
-  ] = /*_*/ behavior.enrich[EventMetadata](generateTimestamp) /*_*/
+  ] = /*_*/ behavior(clock).enrich[EventMetadata](generateTimestamp) /*_*/
 
 }
