@@ -4,23 +4,15 @@ import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 import aecor.MonadActionLiftReject
-import aecor.data.{EitherK, Enriched, EventsourcedBehavior}
+import aecor.data._
 import cats.Monad
 import cats.data.NonEmptyList
-import cats.effect.{Clock, Concurrent, Timer}
-import com.guizmaii.aecor.study.core.booking.action.EventsourcedBooking.behavior
-import com.guizmaii.aecor.study.core.common
-import com.guizmaii.aecor.study.core.common.effect.TimedOutBehaviour
+import cats.effect.Clock
 import com.guizmaii.aecor.study.core.booking.entity.Booking
 import com.guizmaii.aecor.study.core.booking.event._
-import com.guizmaii.aecor.study.core.booking.state.BookingStatus.{
-  AwaitingConfirmation,
-  Canceled,
-  Confirmed,
-  Denied,
-  Settled
-}
+import com.guizmaii.aecor.study.core.booking.state.BookingStatus._
 import com.guizmaii.aecor.study.core.booking.state._
+import com.guizmaii.aecor.study.core.common
 
 final class EventsourcedBooking[F[_], G[_]](clock: Clock[G])(
     implicit F: MonadActionLiftReject[F, G, Option[BookingState], BookingEvent, BookingCommandRejection]
@@ -103,31 +95,10 @@ object EventsourcedBooking {
   ): EventsourcedBehavior[EitherK[Booking, BookingCommandRejection, ?[_]], F, Option[BookingState], BookingEvent] =
     EventsourcedBehavior
       .optionalRejectable(new EventsourcedBooking(clock), BookingState.init, _.handleEvent(_))
+
+  final val entityName: String           = "Booking"
+  final val entityTag: EventTag          = EventTag(entityName)
+  final val tagging: Tagging[BookingKey] = Tagging.partitioned(20)(entityTag)
 }
 
 final case class EventMetadata(timestamp: Instant) extends AnyVal
-
-abstract class Enrich[F[_]: Concurrent: Timer](clock: Clock[F]) {
-
-  import cats.syntax.functor._
-
-  import scala.concurrent.duration._
-
-  val generateTimestamp: F[EventMetadata] =
-    clock.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli).map(EventMetadata)
-
-  val enrichedBehavior: EventsourcedBehavior[
-    EitherK[Booking, BookingCommandRejection, ?[_]],
-    F,
-    Option[BookingState],
-    Enriched[EventMetadata, BookingEvent]
-  ] = /*_*/ behavior(clock).enrich[EventMetadata](generateTimestamp) /*_*/
-
-  val timedOutBehavior: EventsourcedBehavior[
-    EitherK[Booking, BookingCommandRejection, ?[_]],
-    F,
-    Option[BookingState],
-    Enriched[EventMetadata, BookingEvent]
-  ] = /*_*/ TimedOutBehaviour(enrichedBehavior)(2.seconds) /*_*/
-
-}

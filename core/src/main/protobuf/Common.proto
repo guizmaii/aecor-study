@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package com.guizmaii.aecor.study.core.common.protobuf.v1;
+option java_package = "com.guizmaii.aecor.study.core.common.protobuf.msg";
+option optimize_for = SPEED;
+
+option (scalapb.options) = {
+  import: "com.guizmaii.aecor.study.core.common.protobuf.TypeMappers._"
+  single_file: true
+};
+
+import "scalapb/scalapb.proto";
+
+message Seat {
+    int32 row = 1 [(scalapb.field).type = "com.guizmaii.aecor.study.core.booking.state.Row"];
+    int32 number = 2 [(scalapb.field).type = "com.guizmaii.aecor.study.core.booking.state.SeatNumber"];
+}
+
+message Ticket {
+    Seat seat = 1 [(scalapb.field).type = "com.guizmaii.aecor.study.core.booking.state.Seat", (scalapb.field).no_box = true];
+    string price = 2 [(scalapb.field).type = "com.guizmaii.aecor.study.core.booking.state.Money"];
+}

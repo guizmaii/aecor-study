@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package com.guizmaii.aecor.study.core.common.protobuf.v1;
+option java_package = "com.guizmaii.aecor.study.core.common.protobuf.msg";
+option optimize_for = SPEED;
+
+option (scalapb.options) = {
+  import: "com.guizmaii.aecor.study.core.common.protobuf.TypeMappers._"
+  single_file: true
+};
+
+import "scalapb/scalapb.proto";
+import "Common.proto";
+
+message BookingPlaced {
+    string clientId = 1 [(scalapb.field).type = "com.guizmaii.aecor.study.core.booking.state.ClientId"];
+    string concertId = 2 [(scalapb.field).type = "com.guizmaii.aecor.study.core.booking.state.ConcertId"];
+    repeated Seat seats = 3 [(scalapb.field).type = "com.guizmaii.aecor.study.core.booking.state.Seat"];
+    int64 timestamp = 4 [(scalapb.field).type = "java.time.Instant"];
+}
+
+message BookingConfirmed {
+    repeated Ticket tickets = 1 [(scalapb.field).type = "com.guizmaii.aecor.study.core.booking.state.Ticket"];
+    int64 expiresAt = 2 [(scalapb.field).type = "Option[java.time.Instant]"];
+    int64 timestamp = 3 [(scalapb.field).type = "java.time.Instant"];
+}
+message BookingDenied {
+    string reason = 1;
+    int64 timestamp = 2 [(scalapb.field).type = "java.time.Instant"];
+}
+message BookingCancelled {
+    string reason = 1;
+    int64 timestamp = 2 [(scalapb.field).type = "java.time.Instant"];
+}
+message BookingExpired {
+    int64 timestamp = 1 [(scalapb.field).type = "java.time.Instant"];
+}
+message BookingPaid {
+    string paymentId = 1 [(scalapb.field).type = "com.guizmaii.aecor.study.core.booking.state.PaymentId"];
+    int64 timestamp = 2 [(scalapb.field).type = "java.time.Instant"];
+}
+message BookingSettled {
+    int64 timestamp = 1 [(scalapb.field).type = "java.time.Instant"];
+}

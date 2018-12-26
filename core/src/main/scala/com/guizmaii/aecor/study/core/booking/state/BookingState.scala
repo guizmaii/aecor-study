@@ -3,6 +3,7 @@ package com.guizmaii.aecor.study.core.booking.state
 import java.time.Instant
 
 import aecor.data.Folded
+import aecor.encoding.{KeyDecoder, KeyEncoder}
 import cats.Order
 import cats.data.{NonEmptyList => NEL}
 import cats.kernel.Monoid
@@ -10,6 +11,13 @@ import com.guizmaii.aecor.study.core.booking.event._
 import enumeratum._
 
 import scala.collection.immutable
+
+final case class BookingKey(value: String) extends AnyVal
+
+object BookingKey {
+  implicit final val keyEncoder: KeyEncoder[BookingKey] = KeyEncoder.encodeKeyString.contramap(_.value)
+  implicit final val keyDecoder: KeyDecoder[BookingKey] = KeyDecoder.decodeKeyString.map(BookingKey(_))
+}
 
 // State itself
 final case class BookingState(
